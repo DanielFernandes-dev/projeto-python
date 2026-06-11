@@ -2,7 +2,7 @@ from flask import Blueprint, request, jsonify
 from flask_jwt_extended import jwt_required, get_jwt_identity
 from helpdesk.services.ticket_service import TicketService
 from helpdesk.utils.decorators import role_required
-from helpdesk.utils.errors import NotFoundError
+from helpdesk.utils.helpers import pagination_response
 
 ticket_bp = Blueprint("tickets", __name__)
 service = TicketService()
@@ -26,13 +26,7 @@ def list_tickets():
         created_by_id=created_by_id,
         assigned_to_id=assigned_to_id,
     )
-    return jsonify({
-        "tickets": [t.to_dict() for t in result["items"]],
-        "total": result["total"],
-        "page": result["page"],
-        "per_page": result["per_page"],
-        "pages": result["pages"],
-    }), 200
+    return jsonify(pagination_response(result, "tickets")), 200
 
 
 @ticket_bp.route("/<int:ticket_id>", methods=["GET"])

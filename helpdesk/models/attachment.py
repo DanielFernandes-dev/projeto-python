@@ -1,5 +1,6 @@
 from datetime import datetime
 from helpdesk.utils.extensions import db
+from helpdesk.utils.helpers import dt_iso
 
 
 class Attachment(db.Model):
@@ -27,5 +28,5 @@ class Attachment(db.Model):
             "size_bytes": self.size_bytes,
             "ticket_id": self.ticket_id,
             "uploaded_by": self.uploader.name if self.uploader else None,
-            "created_at": self.created_at.isoformat() if self.created_at else None,
+            "created_at": dt_iso(self.created_at),
         }

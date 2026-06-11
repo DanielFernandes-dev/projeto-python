@@ -1,5 +1,6 @@
 from datetime import datetime
 from helpdesk.utils.extensions import db
+from helpdesk.utils.helpers import dt_iso
 
 
 class Status(db.Model):
@@ -25,5 +26,5 @@ class Status(db.Model):
             "is_final": self.is_final,
             "order": self.order,
             "is_active": self.is_active,
-            "created_at": self.created_at.isoformat() if self.created_at else None,
+            "created_at": dt_iso(self.created_at),
         }

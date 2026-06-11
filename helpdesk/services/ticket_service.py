@@ -3,8 +3,10 @@ import string
 from datetime import datetime
 from helpdesk.models.ticket import Ticket
 from helpdesk.models.comment import Comment
+from helpdesk.models.status import Status
 from helpdesk.repositories.ticket_repository import TicketRepository
 from helpdesk.repositories.user_repository import UserRepository
+from helpdesk.utils.extensions import db
 from helpdesk.utils.errors import NotFoundError, ValidationError
 
 
@@ -53,11 +55,9 @@ class TicketService:
             if field in data:
                 setattr(ticket, field, data[field])
         if "status_id" in data:
-            from helpdesk.models.status import Status
             status = Status.query.get(data["status_id"])
             if status and status.is_final:
                 ticket.closed_at = datetime.utcnow()
-        ticket.updated_at = datetime.utcnow()
         return self.repo.save(ticket)
 
     def delete(self, ticket_id):
@@ -70,7 +70,6 @@ class TicketService:
             raise ValidationError("Técnico inválido")
         ticket = self.get_by_id(ticket_id)
         ticket.assigned_to_id = technician_id
-        ticket.updated_at = datetime.utcnow()
         return self.repo.save(ticket)
 
     def add_comment(self, ticket_id, data, user_id):
@@ -83,12 +82,9 @@ class TicketService:
             author_id=user_id,
         )
         if data.get("is_solution"):
-            from helpdesk.models.status import Status
             resolved = Status.query.filter_by(name="Resolvido").first()
             if resolved:
                 ticket.status_id = resolved.id
-                ticket.updated_at = datetime.utcnow()
-        from helpdesk.utils.extensions import db
         db.session.add(comment)
         db.session.commit()
         return comment

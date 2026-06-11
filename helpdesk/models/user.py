@@ -1,6 +1,7 @@
 from datetime import datetime
 from werkzeug.security import generate_password_hash, check_password_hash
 from helpdesk.utils.extensions import db
+from helpdesk.utils.helpers import dt_iso
 
 
 class User(db.Model):
@@ -42,6 +43,6 @@ class User(db.Model):
             "phone": self.phone,
             "is_active": self.is_active,
             "company_id": self.company_id,
-            "created_at": self.created_at.isoformat() if self.created_at else None,
-            "updated_at": self.updated_at.isoformat() if self.updated_at else None,
+            "created_at": dt_iso(self.created_at),
+            "updated_at": dt_iso(self.updated_at),
         }

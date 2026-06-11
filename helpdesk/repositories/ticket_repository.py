@@ -1,5 +1,5 @@
-from datetime import datetime, timedelta
 from helpdesk.models.ticket import Ticket
+from helpdesk.models.status import Status
 from helpdesk.repositories.base_repository import BaseRepository
 from helpdesk.utils.extensions import db
 
@@ -18,7 +18,6 @@ class TicketRepository(BaseRepository):
         return self.paginate(page=page, per_page=per_page, assigned_to_id=user_id)
 
     def find_open_tickets(self, page=1, per_page=20):
-        from helpdesk.models.status import Status
         closed_statuses = Status.query.filter_by(is_final=True).all()
         closed_ids = [s.id for s in closed_statuses]
         if not closed_ids:
@@ -36,11 +35,12 @@ class TicketRepository(BaseRepository):
             "pages": pagination.pages,
         }
 
+    def _closed_ids(self):
+        return [s.id for s in Status.query.filter_by(is_final=True).all()]
+
     def dashboard_stats(self):
         total = Ticket.query.count()
-        from helpdesk.models.status import Status
-        closed_statuses = Status.query.filter_by(is_final=True).all()
-        closed_ids = [s.id for s in closed_statuses]
+        closed_ids = self._closed_ids()
         open_count = Ticket.query.filter(~Ticket.status_id.in_(closed_ids)).count() if closed_ids else total
         closed_count = Ticket.query.filter(Ticket.status_id.in_(closed_ids)).count() if closed_ids else 0
         recent = Ticket.query.order_by(Ticket.created_at.desc()).limit(5).all()

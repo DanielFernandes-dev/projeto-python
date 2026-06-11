@@ -2,6 +2,7 @@ from flask import Blueprint, request, jsonify
 from flask_jwt_extended import jwt_required
 from helpdesk.services.user_service import UserService
 from helpdesk.utils.decorators import role_required
+from helpdesk.utils.helpers import pagination_response
 
 user_bp = Blueprint("users", __name__)
 service = UserService()
@@ -21,13 +22,7 @@ def list_users():
         page=page, per_page=per_page,
         role=role, is_active=is_active,
     )
-    return jsonify({
-        "users": [u.to_dict() for u in result["items"]],
-        "total": result["total"],
-        "page": result["page"],
-        "per_page": result["per_page"],
-        "pages": result["pages"],
-    }), 200
+    return jsonify(pagination_response(result, "users")), 200
 
 
 @user_bp.route("/<int:user_id>", methods=["GET"])

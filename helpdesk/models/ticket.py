@@ -1,5 +1,6 @@
 from datetime import datetime
 from helpdesk.utils.extensions import db
+from helpdesk.utils.helpers import dt_iso
 
 
 class Ticket(db.Model):
@@ -48,7 +49,7 @@ class Ticket(db.Model):
             "priority_id": self.priority_id,
             "status": self.status.name if self.status else None,
             "status_id": self.status_id,
-            "created_at": self.created_at.isoformat() if self.created_at else None,
-            "updated_at": self.updated_at.isoformat() if self.updated_at else None,
-            "closed_at": self.closed_at.isoformat() if self.closed_at else None,
+            "created_at": dt_iso(self.created_at),
+            "updated_at": dt_iso(self.updated_at),
+            "closed_at": dt_iso(self.closed_at),
         }
