@@ -1,5 +1,3 @@
-import random
-import string
 from datetime import datetime
 from helpdesk.models.ticket import Ticket
 from helpdesk.models.comment import Comment
@@ -8,6 +6,7 @@ from helpdesk.repositories.ticket_repository import TicketRepository
 from helpdesk.repositories.user_repository import UserRepository
 from helpdesk.utils.extensions import db
 from helpdesk.utils.errors import NotFoundError, ValidationError
+from helpdesk.utils.helpers import gerar_protocolo
 
 
 class TicketService:
@@ -15,14 +14,10 @@ class TicketService:
         self.repo = TicketRepository()
         self.user_repo = UserRepository()
 
-    def _generate_protocol(self):
-        chars = string.ascii_uppercase + string.digits
-        return "HD" + "".join(random.choices(chars, k=10))
-
     def create(self, data, user_id):
-        protocol = self._generate_protocol()
+        protocol = gerar_protocolo()
         while self.repo.find_by_protocol(protocol):
-            protocol = self._generate_protocol()
+            protocol = gerar_protocolo()
 
         ticket = Ticket(
             title=data["title"],

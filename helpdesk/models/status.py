@@ -1,9 +1,9 @@
 from datetime import datetime
 from helpdesk.utils.extensions import db
-from helpdesk.utils.helpers import dt_iso
+from helpdesk.utils.helpers import SerializableMixin
 
 
-class Status(db.Model):
+class Status(SerializableMixin, db.Model):
     __tablename__ = "statuses"
 
     id = db.Column(db.Integer, primary_key=True)
@@ -16,15 +16,3 @@ class Status(db.Model):
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
 
     tickets = db.relationship("Ticket", backref="status", lazy="dynamic")
-
-    def to_dict(self):
-        return {
-            "id": self.id,
-            "name": self.name,
-            "description": self.description,
-            "color": self.color,
-            "is_final": self.is_final,
-            "order": self.order,
-            "is_active": self.is_active,
-            "created_at": dt_iso(self.created_at),
-        }

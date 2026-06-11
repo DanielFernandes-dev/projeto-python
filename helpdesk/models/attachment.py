@@ -1,9 +1,9 @@
 from datetime import datetime
 from helpdesk.utils.extensions import db
-from helpdesk.utils.helpers import dt_iso
+from helpdesk.utils.helpers import SerializableMixin
 
 
-class Attachment(db.Model):
+class Attachment(SerializableMixin, db.Model):
     __tablename__ = "attachments"
 
     id = db.Column(db.Integer, primary_key=True)
@@ -19,14 +19,7 @@ class Attachment(db.Model):
 
     uploader = db.relationship("User")
 
-    def to_dict(self):
+    def _extra_serialize(self):
         return {
-            "id": self.id,
-            "filename": self.filename,
-            "original_name": self.original_name,
-            "mime_type": self.mime_type,
-            "size_bytes": self.size_bytes,
-            "ticket_id": self.ticket_id,
             "uploaded_by": self.uploader.name if self.uploader else None,
-            "created_at": dt_iso(self.created_at),
         }

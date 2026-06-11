@@ -1,9 +1,9 @@
 from datetime import datetime
 from helpdesk.utils.extensions import db
-from helpdesk.utils.helpers import dt_iso
+from helpdesk.utils.helpers import SerializableMixin
 
 
-class Category(db.Model):
+class Category(SerializableMixin, db.Model):
     __tablename__ = "categories"
 
     id = db.Column(db.Integer, primary_key=True)
@@ -13,12 +13,3 @@ class Category(db.Model):
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
 
     tickets = db.relationship("Ticket", backref="category", lazy="dynamic")
-
-    def to_dict(self):
-        return {
-            "id": self.id,
-            "name": self.name,
-            "description": self.description,
-            "is_active": self.is_active,
-            "created_at": dt_iso(self.created_at),
-        }

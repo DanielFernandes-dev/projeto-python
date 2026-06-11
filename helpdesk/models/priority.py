@@ -1,9 +1,9 @@
 from datetime import datetime
 from helpdesk.utils.extensions import db
-from helpdesk.utils.helpers import dt_iso
+from helpdesk.utils.helpers import SerializableMixin
 
 
-class Priority(db.Model):
+class Priority(SerializableMixin, db.Model):
     __tablename__ = "priorities"
 
     id = db.Column(db.Integer, primary_key=True)
@@ -14,13 +14,3 @@ class Priority(db.Model):
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
 
     tickets = db.relationship("Ticket", backref="priority", lazy="dynamic")
-
-    def to_dict(self):
-        return {
-            "id": self.id,
-            "name": self.name,
-            "level": self.level,
-            "color": self.color,
-            "is_active": self.is_active,
-            "created_at": dt_iso(self.created_at),
-        }

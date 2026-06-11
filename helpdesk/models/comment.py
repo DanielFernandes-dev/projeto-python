@@ -1,9 +1,9 @@
 from datetime import datetime
 from helpdesk.utils.extensions import db
-from helpdesk.utils.helpers import dt_iso
+from helpdesk.utils.helpers import SerializableMixin
 
 
-class Comment(db.Model):
+class Comment(SerializableMixin, db.Model):
     __tablename__ = "comments"
 
     id = db.Column(db.Integer, primary_key=True)
@@ -17,15 +17,7 @@ class Comment(db.Model):
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
     updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
 
-    def to_dict(self):
+    def _extra_serialize(self):
         return {
-            "id": self.id,
-            "content": self.content,
-            "is_internal": self.is_internal,
-            "is_solution": self.is_solution,
-            "ticket_id": self.ticket_id,
             "author": self.author.name if self.author else None,
-            "author_id": self.author_id,
-            "created_at": dt_iso(self.created_at),
-            "updated_at": dt_iso(self.updated_at),
         }
