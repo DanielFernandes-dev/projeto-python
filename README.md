@@ -43,24 +43,27 @@ app.py                     # Fabrica Flask
 seed.py                    # Popula banco
 helpdesk/
 ├── config.py              # Config (SECRET_KEY, DB, JWT)
-├── models/                # ORM + classes de domínio
+├── exceptions.py          # AppError, NotFoundError, ValidationError, etc.
+├── models/                # Modelos ORM
 │   ├── __init__.py
+│   ├── base.py            # BaseModel (id, created_at)
 │   ├── company.py         # Company
-│   ├── user.py            # User + CapacidadeExcedidaException
+│   ├── user.py            # User (técnico/cliente/admin)
 │   ├── category.py        # Category
 │   ├── priority.py        # Priority
 │   ├── status.py          # Status
 │   ├── ticket.py          # Ticket (SLA, transições, histórico)
 │   ├── comment.py         # Comment
 │   ├── attachment.py      # Attachment
-│   ├── ticket_history.py  # TicketHistory (log de ações)
-│   └── central_de_suporte.py  # CentralDeSuporte + ChamadoNaoEncontradoException
+│   └── ticket_history.py  # TicketHistory (log de ações)
 ├── repositories/          # Camada de acesso a dados
 │   ├── base_repository.py # CRUD genérico
 │   ├── ticket_repository.py
 │   └── user_repository.py
 ├── services/              # Lógica de negócio
+│   ├── __init__.py
 │   ├── auth_service.py
+│   ├── central_de_suporte.py  # Orquestração de chamados
 │   ├── ticket_service.py
 │   └── user_service.py
 ├── resources/             # Blueprints Flask (REST)
@@ -75,9 +78,31 @@ helpdesk/
 └── utils/
     ├── extensions.py      # db, jwt, ma
     ├── helpers.py         # dt_iso, gerar_protocolo, pagination_response, SerializableMixin
-    ├── decorators.py      # role_required
-    └── errors.py          # AppError, NotFoundError, ValidationError, etc.
+    └── decorators.py      # role_required
 ```
+
+## Convenções
+
+### BaseModel
+Todos os models ORM herdam de `helpdesk.models.base.BaseModel`, que fornece:
+- `id` (chave primária autoincremento)
+- `created_at` (timestamp de criação)
+- Acesso a `db`, `SerializableMixin`, `datetime`
+
+Models que precisam de `updated_at` ou `is_active` adicionam manualmente.
+
+### Exceções
+Centralizadas em `helpdesk/exceptions.py`:
+- `AppError` — base (message + status_code)
+- `NotFoundError`, `ValidationError`, `UnauthorizedError`, `ForbiddenError`
+- `CapacidadeExcedidaException` — limite de chamados por técnico
+- `ChamadoNaoEncontradoException` — chamado inexistente
+- `register_error_handlers(app)` — registra handlers globais no Flask
+
+### SerializableMixin
+`to_dict()` serializa automaticamente todas as colunas da tabela.
+Subclasses definem `serialize_exclude` para ocultar campos sensíveis
+e `_extra_serialize()` para adicionar campos computados.
 
 ## Modelos
 
@@ -96,6 +121,7 @@ Métodos:
 - `chamados_ativos` — tickets atribuídos não finalizados
 - `disponivel` — True se `chamados_ativos < capacidade_maxima`
 - `atribuir_chamado(ticket_id)`, `liberar_chamado(ticket_id)`, `tem_especialidade(categoria)`
+- Lança `CapacidadeExcedidaException` se tentar atribuir acima do limite
 
 ### CentralDeSuporte
 
@@ -107,6 +133,7 @@ Orquestra chamados e técnicos de uma empresa:
 - `atribuicao_automatica()` — distribui fila para o técnico menos ocupado
 - `resolver_chamado(numero, id_tecnico, descricao_solucao)` — resolve com solução
 - `fechar_chamado(numero)` — fecha chamado resolvido
+- Lança `ChamadoNaoEncontradoException` se o chamado não existir
 - `listar_em_atraso()` — chamados com SLA estourado
 - `relatorio_por_prioridade()` — chamados ativos agrupados por prioridade
 - `painel_operacional()` — resumo geral
