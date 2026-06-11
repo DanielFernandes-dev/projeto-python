@@ -1,16 +1,15 @@
+"""Serviço de autenticação — login, refresh e verificação de credenciais."""
 from flask_jwt_extended import create_access_token, create_refresh_token
-from helpdesk.repositories.user_repository import UserRepository
+from helpdesk.models.user import User
 from helpdesk.exceptions import UnauthorizedError, ValidationError
 
 
 class AuthService:
-    def __init__(self):
-        self.user_repo = UserRepository()
-
     def authenticate(self, email, password):
+        """Valida credenciais e retorna tokens JWT + dados do usuário."""
         if not email or not password:
             raise ValidationError("Email e senha são obrigatórios")
-        user = self.user_repo.find_by_email(email)
+        user = User.query.filter_by(email=email).first()
         if not user or not user.check_password(password):
             raise UnauthorizedError("Credenciais inválidas")
         if not user.is_active:
@@ -24,5 +23,6 @@ class AuthService:
         }
 
     def refresh(self, identity):
+        """Gera novo access_token a partir do refresh_token."""
         access_token = create_access_token(identity=identity)
         return {"access_token": access_token}

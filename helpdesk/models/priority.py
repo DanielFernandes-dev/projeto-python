@@ -1,3 +1,4 @@
+"""Modelo Priority — nível de prioridade do ticket (Baixa, Média, Alta, Crítica)."""
 from helpdesk.models.base import BaseModel
 from helpdesk.utils.extensions import db
 

@@ -1,3 +1,4 @@
+"""Blueprint de empresas — CRUD genérico com listagem autenticada e GET por ID."""
 from helpdesk.models.company import Company
 from helpdesk.resources.base_crud import create_crud_blueprint
 

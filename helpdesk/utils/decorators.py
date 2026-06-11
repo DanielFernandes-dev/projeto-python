@@ -1,3 +1,8 @@
+"""Decoradores personalizados para proteção de rotas.
+
+role_required verifica se o usuário autenticado possui um dos papéis
+informados antes de executar a view function.
+"""
 from functools import wraps
 from flask_jwt_extended import get_jwt_identity
 from helpdesk.models import User
@@ -5,6 +10,10 @@ from helpdesk.exceptions import ForbiddenError, UnauthorizedError
 
 
 def role_required(*roles):
+    """Decorator: permite acesso apenas a usuários com um dos papéis informados.
+
+    Uso: @role_required("admin") ou @role_required("admin", "technician")
+    """
     def decorator(fn):
         @wraps(fn)
         def wrapper(*args, **kwargs):

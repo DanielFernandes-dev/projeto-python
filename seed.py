@@ -1,10 +1,14 @@
+"""Popula o banco com dados iniciais para desenvolvimento.
+
+Cria 3 usuários (admin, técnico, cliente), 6 status, 4 prioridades
+e 6 categorias. Executar com: python seed.py
+"""
 from app import create_app
 from helpdesk.utils.extensions import db
 from helpdesk.models.user import User
 from helpdesk.models.status import Status
 from helpdesk.models.priority import Priority
 from helpdesk.models.category import Category
-from helpdesk.models.company import Company
 
 
 def seed():

@@ -1,3 +1,4 @@
+"""Modelo Category — categorias para classificar tickets (ex: Hardware, Rede)."""
 from helpdesk.models.base import BaseModel
 from helpdesk.utils.extensions import db
 

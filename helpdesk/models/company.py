@@ -1,3 +1,4 @@
+"""Modelo Company — empresa/cliente corporativo."""
 from datetime import datetime
 from helpdesk.models.base import BaseModel
 from helpdesk.utils.extensions import db

@@ -13,9 +13,8 @@ Sistema de helpdesk/ticket construído com Flask, SQLAlchemy e JWT.
 python -m venv venv
 source venv/bin/activate
 pip install -r requirements.txt
-cp .env.example .env  # se existir, senao edite .env direto
-python seed.py         # popula banco com dados iniciais
-python app.py          # inicia servidor
+python seed.py          # popula banco com dados iniciais
+python app.py           # inicia servidor
 ```
 
 Acesse `http://localhost:5000/`.
@@ -39,31 +38,24 @@ Cria usuários, status, prioridades e categorias iniciais.
 ## Arquitetura
 
 ```
-app.py                     # Fabrica Flask
+app.py                     # Fábrica Flask
 seed.py                    # Popula banco
 helpdesk/
 ├── config.py              # Config (SECRET_KEY, DB, JWT)
 ├── exceptions.py          # AppError, NotFoundError, ValidationError, etc.
 ├── models/                # Modelos ORM
-│   ├── __init__.py
-│   ├── base.py            # BaseModel (id, created_at)
+│   ├── base.py            # BaseModel (id, created_at, to_dict)
 │   ├── company.py         # Company
 │   ├── user.py            # User (técnico/cliente/admin)
 │   ├── category.py        # Category
 │   ├── priority.py        # Priority
 │   ├── status.py          # Status
-│   ├── ticket.py          # Ticket (SLA, transições, histórico)
+│   ├── ticket.py          # Ticket (SLA, histórico)
 │   ├── comment.py         # Comment
 │   ├── attachment.py      # Attachment
 │   └── ticket_history.py  # TicketHistory (log de ações)
-├── repositories/          # Camada de acesso a dados
-│   ├── base_repository.py # CRUD genérico
-│   ├── ticket_repository.py
-│   └── user_repository.py
 ├── services/              # Lógica de negócio
-│   ├── __init__.py
 │   ├── auth_service.py
-│   ├── central_de_suporte.py  # Orquestração de chamados
 │   ├── ticket_service.py
 │   └── user_service.py
 ├── resources/             # Blueprints Flask (REST)
@@ -74,10 +66,13 @@ helpdesk/
 │   ├── priority.py
 │   ├── status.py
 │   ├── company.py
-│   └── dashboard.py
+│   ├── dashboard.py
+│   └── base_crud.py       # Fábrica de CRUD genérico
 └── utils/
-    ├── extensions.py      # db, jwt, ma
-    ├── helpers.py         # dt_iso, gerar_protocolo, pagination_response, SerializableMixin
+    ├── extensions.py      # db, jwt, ma, db_save, db_delete
+    ├── helpers.py         # dt_iso, gerar_protocolo, pagination_response,
+    │                      # get_or_404, parse_pagination, update_from_dict,
+    │                      # apply_filters
     └── decorators.py      # role_required
 ```
 
@@ -87,7 +82,9 @@ helpdesk/
 Todos os models ORM herdam de `helpdesk.models.base.BaseModel`, que fornece:
 - `id` (chave primária autoincremento)
 - `created_at` (timestamp de criação)
-- Acesso a `db`, `SerializableMixin`, `datetime`
+- `to_dict()` — serializa automaticamente todas as colunas da tabela
+- `serialize_exclude` — conjunto de colunas a ocultar na serialização
+- `_extra_serialize()` — hook para subclasses adicionarem campos computados
 
 Models que precisam de `updated_at` ou `is_active` adicionam manualmente.
 
@@ -95,14 +92,15 @@ Models que precisam de `updated_at` ou `is_active` adicionam manualmente.
 Centralizadas em `helpdesk/exceptions.py`:
 - `AppError` — base (message + status_code)
 - `NotFoundError`, `ValidationError`, `UnauthorizedError`, `ForbiddenError`
-- `CapacidadeExcedidaException` — limite de chamados por técnico
-- `ChamadoNaoEncontradoException` — chamado inexistente
 - `register_error_handlers(app)` — registra handlers globais no Flask
 
-### SerializableMixin
-`to_dict()` serializa automaticamente todas as colunas da tabela.
-Subclasses definem `serialize_exclude` para ocultar campos sensíveis
-e `_extra_serialize()` para adicionar campos computados.
+### Helpers
+- `get_or_404(model, id, nome)` — busca por ID ou levanta `NotFoundError`
+- `db_save(obj)` / `db_delete(obj)` — persiste/remove no banco (add+commit / delete+commit)
+- `parse_pagination()` — extrai `page` e `per_page` dos query params
+- `update_from_dict(obj, data, fields)` — atribui seletivamente campos de um dict
+- `apply_filters(query, model, filters)` — aplica filtros opcionais ignorando `None`
+- `pagination_response(query, page, per_page, items_key)` — executa paginação e retorna dict padronizado
 
 ## Modelos
 
@@ -112,35 +110,16 @@ Atributos principais: `id`, `title`, `description`, `protocol`, `sla_horas`, `st
 
 Métodos:
 - `tempo_decorrido()` — timedelta desde abertura
-- `esta_em_atraso()` — True se ultrapassou SLA e não está resolvido/fechado
-- `registrar_acao(acao, responsavel)` — adiciona entrada no histórico
-- `alterar_status(novo_status, responsavel)` — valida transições: `aberto → em_atendimento → aguardando_cliente → em_atendimento → resolvido → fechado`
+- `esta_em_atraso()` — True se ultrapassou SLA e não foi finalizado
 
 ### User / Técnico
 
 - `chamados_ativos` — tickets atribuídos não finalizados
 - `disponivel` — True se `chamados_ativos < capacidade_maxima`
-- `atribuir_chamado(ticket_id)`, `liberar_chamado(ticket_id)`, `tem_especialidade(categoria)`
-- Lança `CapacidadeExcedidaException` se tentar atribuir acima do limite
-
-### CentralDeSuporte
-
-Orquestra chamados e técnicos de uma empresa:
-
-- `abrir_chamado(titulo, descricao, cliente, prioridade)` — cria ticket e adiciona à fila
-- `registrar_tecnico(nome, especialidades, capacidade_maxima)` — cria técnico
-- `atribuir_tecnico(numero_chamado, id_tecnico)` — vincula técnico ao chamado
-- `atribuicao_automatica()` — distribui fila para o técnico menos ocupado
-- `resolver_chamado(numero, id_tecnico, descricao_solucao)` — resolve com solução
-- `fechar_chamado(numero)` — fecha chamado resolvido
-- Lança `ChamadoNaoEncontradoException` se o chamado não existir
-- `listar_em_atraso()` — chamados com SLA estourado
-- `relatorio_por_prioridade()` — chamados ativos agrupados por prioridade
-- `painel_operacional()` — resumo geral
 
 ## API REST
 
-Prefix: `/api`
+Prefixo: `/api`
 
 ### Autenticação
 
@@ -183,14 +162,5 @@ Prefix: `/api`
 | GET | `/api/priorities` | Listar prioridades |
 | GET | `/api/statuses` | Listar status |
 | GET | `/api/companies` | Listar empresas |
-| GET | `/api/dashboard` | Dashboard (admin) |
+| GET | `/api/dashboard` | Dashboard |
 | GET | `/api/health` | Health check |
-
-## Testes
-
-```bash
-source venv/bin/activate
-python -c "from app import create_app; app = create_app()"
-```
-
-Ou execute o arquivo de seed e teste manualmente com `curl` ou um cliente HTTP.

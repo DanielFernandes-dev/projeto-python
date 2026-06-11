@@ -1,3 +1,8 @@
+"""Modelo Status — estado do ticket (Aberto, Em Andamento, Resolvido, etc.).
+
+is_final indica se o ticket não pode mais ser alterado (Resolvido, Fechado).
+order define a ordem de exibição nas listas.
+"""
 from helpdesk.models.base import BaseModel
 from helpdesk.utils.extensions import db
 

@@ -1,3 +1,4 @@
+"""Modelo Comment — comentário em um ticket, podendo ser interno ou solução."""
 from datetime import datetime
 from helpdesk.models.base import BaseModel
 from helpdesk.utils.extensions import db

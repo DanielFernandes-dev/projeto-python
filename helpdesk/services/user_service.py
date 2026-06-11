@@ -1,18 +1,25 @@
+"""Serviço de usuários — CRUD com validações de negócio.
+
+Gerencia criação, atualização, listagem e remoção de usuários,
+incluindo hash de senha e verificação de unicidade de email.
+"""
 from helpdesk.models.user import User
-from helpdesk.repositories.user_repository import UserRepository
-from helpdesk.exceptions import ValidationError, NotFoundError
+from helpdesk.utils.extensions import db, db_save, db_delete
+from helpdesk.exceptions import ValidationError
+from helpdesk.utils.helpers import get_or_404, update_from_dict, apply_filters, pagination_response
 
 
 class UserService:
-    def __init__(self):
-        self.repo = UserRepository()
-
     def create(self, data):
+        """Cria um novo usuário com senha hasheada.
+
+        Valida presença de nome, email e senha, e unicidade do email.
+        """
         if not data.get("name") or not data.get("email"):
             raise ValidationError("Nome e email são obrigatórios")
         if not data.get("password"):
             raise ValidationError("Senha é obrigatória")
-        if self.repo.find_by_email(data["email"]):
+        if User.query.filter_by(email=data["email"]).first():
             raise ValidationError("Email já cadastrado")
         user = User(
             name=data["name"],
@@ -22,26 +29,36 @@ class UserService:
             company_id=data.get("company_id"),
         )
         user.set_password(data["password"])
-        return self.repo.save(user)
+        return db_save(user)
 
     def get_by_id(self, user_id):
-        user = self.repo.find_by_id(user_id)
-        if not user:
-            raise NotFoundError("Usuário")
-        return user
+        """Retorna usuário por ID ou levanta NotFoundError."""
+        return get_or_404(User, user_id, "Usuário")
 
     def update(self, user_id, data):
+        """Atualiza campos permitidos de um usuário.
+
+        Se a chave 'password' estiver presente, faz o hash da nova senha.
+        """
         user = self.get_by_id(user_id)
-        for field in ("name", "email", "role", "phone", "is_active", "company_id"):
-            if field in data:
-                setattr(user, field, data[field])
+        update_from_dict(user, data, (
+            "name", "email", "role", "phone", "is_active", "company_id",
+        ))
         if data.get("password"):
             user.set_password(data["password"])
-        return self.repo.save(user)
+        db.session.commit()
+        return user
 
     def delete(self, user_id):
+        """Remove um usuário do banco."""
         user = self.get_by_id(user_id)
-        self.repo.delete(user)
+        db_delete(user)
 
     def list_users(self, page=1, per_page=20, **filters):
-        return self.repo.paginate(page=page, per_page=per_page, **filters)
+        """Lista usuários com paginação e filtros opcionais (role, is_active)."""
+        query = apply_filters(User.query, User, filters)
+        return pagination_response(
+            query.order_by(User.id.desc()),
+            page=page, per_page=per_page,
+            items_key="users"
+        )

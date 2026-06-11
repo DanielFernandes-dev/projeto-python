@@ -1,3 +1,4 @@
+"""Blueprint de status — CRUD genérico ordenado pelo campo order."""
 from helpdesk.models.status import Status
 from helpdesk.resources.base_crud import create_crud_blueprint
 

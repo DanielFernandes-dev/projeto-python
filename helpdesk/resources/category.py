@@ -1,3 +1,4 @@
+"""Blueprint de categorias — CRUD genérico via create_crud_blueprint."""
 from helpdesk.models.category import Category
 from helpdesk.resources.base_crud import create_crud_blueprint
 

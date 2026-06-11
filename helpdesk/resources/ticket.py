@@ -2,7 +2,7 @@ from flask import Blueprint, request, jsonify
 from flask_jwt_extended import jwt_required, get_jwt_identity
 from helpdesk.services.ticket_service import TicketService
 from helpdesk.utils.decorators import role_required
-from helpdesk.utils.helpers import pagination_response
+from helpdesk.utils.helpers import parse_pagination
 
 ticket_bp = Blueprint("tickets", __name__)
 service = TicketService()
@@ -11,22 +11,15 @@ service = TicketService()
 @ticket_bp.route("", methods=["GET"])
 @jwt_required()
 def list_tickets():
-    page = request.args.get("page", 1, type=int)
-    per_page = request.args.get("per_page", 20, type=int)
-    status_id = request.args.get("status_id", type=int)
-    priority_id = request.args.get("priority_id", type=int)
-    category_id = request.args.get("category_id", type=int)
-    created_by_id = request.args.get("created_by_id", type=int)
-    assigned_to_id = request.args.get("assigned_to_id", type=int)
-    result = service.list_tickets(
+    page, per_page = parse_pagination()
+    return jsonify(service.list_tickets(
         page=page, per_page=per_page,
-        status_id=status_id,
-        priority_id=priority_id,
-        category_id=category_id,
-        created_by_id=created_by_id,
-        assigned_to_id=assigned_to_id,
-    )
-    return jsonify(pagination_response(result, "tickets")), 200
+        status_id=request.args.get("status_id", type=int),
+        priority_id=request.args.get("priority_id", type=int),
+        category_id=request.args.get("category_id", type=int),
+        created_by_id=request.args.get("created_by_id", type=int),
+        assigned_to_id=request.args.get("assigned_to_id", type=int),
+    )), 200
 
 
 @ticket_bp.route("/<int:ticket_id>", methods=["GET"])

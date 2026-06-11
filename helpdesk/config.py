@@ -1,3 +1,8 @@
+"""Configurações da aplicação — lê do .env com fallbacks para desenvolvimento.
+
+As chaves SECRET_KEY e JWT_SECRET_KEY usam valores fixos apenas quando
+não há arquivo .env (ambiente de desenvolvimento local).
+"""
 import os
 from dotenv import load_dotenv
 

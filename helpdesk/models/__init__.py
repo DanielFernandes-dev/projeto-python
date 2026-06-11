@@ -1,3 +1,4 @@
+"""Reexporta todos os models para facilitar imports com `from helpdesk.models import User`."""
 from .company import Company
 from .user import User
 from .category import Category

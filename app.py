@@ -1,3 +1,8 @@
+"""Fábrica da aplicação Flask — monta e retorna a instância do servidor.
+
+Todos os blueprints (auth, users, tickets, etc.) são registrados aqui
+com o prefixo /api. A criação das tabelas no banco é automática ao iniciar.
+"""
 from flask import Flask
 from helpdesk.config import Config
 from helpdesk.utils.extensions import db, jwt, ma
@@ -37,7 +42,6 @@ def create_app(config_class=Config):
         return {
             "service": "HelpDesk Pro",
             "version": "1.0.0",
-            "docs": "/api/health",
             "endpoints": {
                 "health": "/api/health",
                 "auth": "/api/auth/login",

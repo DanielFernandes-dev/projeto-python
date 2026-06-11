@@ -1,3 +1,4 @@
+"""Modelo Attachment — arquivo anexado a um ticket."""
 from helpdesk.models.base import BaseModel
 from helpdesk.utils.extensions import db
 

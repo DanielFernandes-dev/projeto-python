@@ -1,10 +1,14 @@
+"""Modelo User — representa qualquer pessoa no sistema (admin, técnico, cliente).
+
+Técnicos possuem capacidade_maxima de chamados simultâneos e lista de
+especialidades. A senha é armazenada como hash do Werkzeug.
+"""
 from datetime import datetime
 from werkzeug.security import generate_password_hash, check_password_hash
 from helpdesk.models.base import BaseModel
-from helpdesk.models.ticket import Ticket
 from helpdesk.models.status import Status
+from helpdesk.models.ticket import Ticket
 from helpdesk.utils.extensions import db
-from helpdesk.exceptions import CapacidadeExcedidaException
 
 
 class User(BaseModel):
@@ -40,38 +44,17 @@ class User(BaseModel):
 
     @property
     def chamados_ativos(self):
+        """IDs dos tickets atribuídos a este técnico que ainda não foram finalizados."""
         if self.role != "technician":
             return []
-        from sqlalchemy import select
-        closed = select(Status.id).where(Status.is_final == True)
+        closed = db.select(Status.id).where(Status.is_final == True)
         tickets = self.tickets_assigned.filter(~Ticket.status_id.in_(closed)).all()
         return [t.id for t in tickets]
 
     @property
     def disponivel(self):
+        """True se o técnico ainda pode receber mais chamados."""
         return len(self.chamados_ativos) < self.capacidade_maxima
-
-    def atribuir_chamado(self, ticket_id):
-        if not self.disponivel:
-            raise CapacidadeExcedidaException(
-                self.id, self.name, self.capacidade_maxima
-            )
-        ticket = Ticket.query.get(ticket_id)
-        if ticket:
-            ticket.assigned_to_id = self.id
-            db.session.commit()
-
-    def liberar_chamado(self, ticket_id):
-        ticket = Ticket.query.get(ticket_id)
-        if not ticket or ticket.assigned_to_id != self.id:
-            raise ValueError(
-                f"Chamado #{ticket_id} nao encontrado nos ativos de {self.name}"
-            )
-        ticket.assigned_to_id = None
-        db.session.commit()
-
-    def tem_especialidade(self, categoria):
-        return categoria in (self.especialidades or [])
 
     def _extra_serialize(self):
         return {
