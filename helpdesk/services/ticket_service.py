@@ -5,7 +5,7 @@ from helpdesk.models.status import Status
 from helpdesk.repositories.ticket_repository import TicketRepository
 from helpdesk.repositories.user_repository import UserRepository
 from helpdesk.utils.extensions import db
-from helpdesk.utils.errors import NotFoundError, ValidationError
+from helpdesk.exceptions import NotFoundError, ValidationError
 from helpdesk.utils.helpers import gerar_protocolo
 
 

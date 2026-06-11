@@ -1,6 +1,6 @@
 from flask_jwt_extended import create_access_token, create_refresh_token
 from helpdesk.repositories.user_repository import UserRepository
-from helpdesk.utils.errors import UnauthorizedError, ValidationError
+from helpdesk.exceptions import UnauthorizedError, ValidationError
 
 
 class AuthService:

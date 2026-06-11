@@ -1,9 +1,12 @@
 from datetime import datetime, timedelta
+from helpdesk.models.base import BaseModel
+from helpdesk.models.ticket_history import TicketHistory
+from helpdesk.models.status import Status
 from helpdesk.utils.extensions import db
-from helpdesk.utils.helpers import SerializableMixin
+from helpdesk.utils.helpers import dt_iso
 
 
-class Ticket(SerializableMixin, db.Model):
+class Ticket(BaseModel):
     __tablename__ = "tickets"
 
     PRIORIDADES_VALIDAS = ("baixa", "media", "alta", "critica")
@@ -39,7 +42,6 @@ class Ticket(SerializableMixin, db.Model):
         "created_at", "updated_at", "closed_at",
     }
 
-    id = db.Column(db.Integer, primary_key=True)
     title = db.Column(db.String(200), nullable=False)
     description = db.Column(db.Text, nullable=False)
     protocol = db.Column(db.String(20), unique=True, nullable=False)
@@ -52,7 +54,6 @@ class Ticket(SerializableMixin, db.Model):
     priority_id = db.Column(db.Integer, db.ForeignKey("priorities.id"), nullable=True)
     status_id = db.Column(db.Integer, db.ForeignKey("statuses.id"), nullable=True)
 
-    created_at = db.Column(db.DateTime, default=datetime.utcnow)
     updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
     closed_at = db.Column(db.DateTime, nullable=True)
 
@@ -116,7 +117,6 @@ class Ticket(SerializableMixin, db.Model):
         return self.tempo_decorrido() > timedelta(hours=self.sla_horas)
 
     def registrar_acao(self, acao, responsavel):
-        from helpdesk.models.ticket_history import TicketHistory
         entry = TicketHistory(
             ticket_id=self.id, acao=acao, responsavel=responsavel,
         )
@@ -128,7 +128,6 @@ class Ticket(SerializableMixin, db.Model):
         if novo_status not in self.TRANSICOES.get(atual, []):
             raise ValueError(f"Transicao invalida: {atual} -> {novo_status}")
         nome_db = self.MAPA_STATUS.get(novo_status, novo_status)
-        from helpdesk.models.status import Status
         status_obj = Status.query.filter_by(name=nome_db).first()
         if status_obj:
             self.status_id = status_obj.id
@@ -149,7 +148,7 @@ class Ticket(SerializableMixin, db.Model):
             "cliente": self.cliente,
             "prioridade": self.prioridade,
             "status": self.status_nome,
-            "data_abertura": self.created_at.isoformat() if self.created_at else None,
+            "data_abertura": dt_iso(self.created_at),
             "sla_horas": self.sla_horas,
             "tecnico": self.tecnico,
             "created_by": self.cliente,
@@ -162,9 +161,9 @@ class Ticket(SerializableMixin, db.Model):
             "priority": self.prioridade,
             "priority_id": self.priority_id,
             "status_id": self.status_id,
-            "created_at": self.created_at.isoformat() if self.created_at else None,
-            "updated_at": self.updated_at.isoformat() if self.updated_at else None,
-            "closed_at": self.closed_at.isoformat() if self.closed_at else None,
+            "created_at": dt_iso(self.created_at),
+            "updated_at": dt_iso(self.updated_at),
+            "closed_at": dt_iso(self.closed_at),
             "historico": [h.to_dict() for h in self.historico.all()],
             "tempo_decorrido_horas": round(
                 self.tempo_decorrido().total_seconds() / 3600, 2

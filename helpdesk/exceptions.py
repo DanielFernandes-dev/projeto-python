@@ -28,6 +28,20 @@ class ForbiddenError(AppError):
         super().__init__(message, 403)
 
 
+class CapacidadeExcedidaException(AppError):
+    def __init__(self, tecnico_id, nome, capacidade):
+        super().__init__(
+            f"Tecnico {nome} (ID: {tecnico_id}) ja atingiu a "
+            f"capacidade maxima de {capacidade} chamados ativos",
+            422,
+        )
+
+
+class ChamadoNaoEncontradoException(AppError):
+    def __init__(self, numero):
+        super().__init__(f"Chamado #{numero} nao encontrado", 404)
+
+
 def register_error_handlers(app):
     @app.errorhandler(AppError)
     def handle_app_error(error):

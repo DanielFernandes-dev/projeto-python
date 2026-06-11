@@ -1,6 +1,6 @@
 from helpdesk.models.user import User
 from helpdesk.repositories.user_repository import UserRepository
-from helpdesk.utils.errors import ValidationError, NotFoundError
+from helpdesk.exceptions import ValidationError, NotFoundError
 
 
 class UserService:

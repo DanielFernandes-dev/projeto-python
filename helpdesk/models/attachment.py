@@ -1,12 +1,10 @@
-from datetime import datetime
+from helpdesk.models.base import BaseModel
 from helpdesk.utils.extensions import db
-from helpdesk.utils.helpers import SerializableMixin
 
 
-class Attachment(SerializableMixin, db.Model):
+class Attachment(BaseModel):
     __tablename__ = "attachments"
 
-    id = db.Column(db.Integer, primary_key=True)
     filename = db.Column(db.String(255), nullable=False)
     original_name = db.Column(db.String(255), nullable=False)
     mime_type = db.Column(db.String(100), nullable=True)
@@ -14,8 +12,6 @@ class Attachment(SerializableMixin, db.Model):
 
     ticket_id = db.Column(db.Integer, db.ForeignKey("tickets.id"), nullable=False)
     uploaded_by_id = db.Column(db.Integer, db.ForeignKey("users.id"), nullable=True)
-
-    created_at = db.Column(db.DateTime, default=datetime.utcnow)
 
     uploader = db.relationship("User")
 

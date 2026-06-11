@@ -1,7 +1,7 @@
 from functools import wraps
 from flask_jwt_extended import get_jwt_identity
 from helpdesk.models import User
-from helpdesk.utils.errors import ForbiddenError, UnauthorizedError
+from helpdesk.exceptions import ForbiddenError, UnauthorizedError
 
 
 def role_required(*roles):

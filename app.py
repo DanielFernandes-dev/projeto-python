@@ -1,7 +1,7 @@
 from flask import Flask
 from helpdesk.config import Config
 from helpdesk.utils.extensions import db, jwt, ma
-from helpdesk.utils.errors import register_error_handlers
+from helpdesk.exceptions import register_error_handlers
 from helpdesk.resources.auth import auth_bp
 from helpdesk.resources.user import user_bp
 from helpdesk.resources.ticket import ticket_bp

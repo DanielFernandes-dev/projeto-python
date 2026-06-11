@@ -5,11 +5,7 @@ from helpdesk.models.ticket import Ticket
 from helpdesk.models.user import User
 from helpdesk.models.status import Status
 from helpdesk.models.priority import Priority
-
-
-class ChamadoNaoEncontradoException(Exception):
-    def __init__(self, numero):
-        super().__init__(f"Chamado #{numero} nao encontrado")
+from helpdesk.exceptions import ChamadoNaoEncontradoException
 
 
 class CentralDeSuporte:
