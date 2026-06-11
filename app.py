@@ -32,6 +32,25 @@ def create_app(config_class=Config):
     app.register_blueprint(company_bp, url_prefix=f"{prefix}/companies")
     app.register_blueprint(dashboard_bp, url_prefix=f"{prefix}/dashboard")
 
+    @app.route("/")
+    def index():
+        return {
+            "service": "HelpDesk Pro",
+            "version": "1.0.0",
+            "docs": "/api/health",
+            "endpoints": {
+                "health": "/api/health",
+                "auth": "/api/auth/login",
+                "users": "/api/users",
+                "tickets": "/api/tickets",
+                "categories": "/api/categories",
+                "priorities": "/api/priorities",
+                "statuses": "/api/statuses",
+                "companies": "/api/companies",
+                "dashboard": "/api/dashboard",
+            },
+        }
+
     @app.route("/api/health")
     def health_check():
         return {"status": "ok", "service": "HelpDesk Pro"}
