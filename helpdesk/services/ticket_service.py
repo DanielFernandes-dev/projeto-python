@@ -3,11 +3,13 @@
 Centraliza toda a lógica de negócio relacionada a chamados,
 isolando os resources (camada HTTP) dos models (camada de dados).
 """
-from datetime import datetime
+from datetime import datetime, timedelta
 from helpdesk.models.ticket import Ticket
 from helpdesk.models.comment import Comment
 from helpdesk.models.status import Status
 from helpdesk.models.user import User
+from helpdesk.models.priority import Priority
+from helpdesk.models.ticket_history import TicketHistory
 from helpdesk.utils.extensions import db, db_save, db_delete
 from helpdesk.exceptions import NotFoundError, ValidationError
 from helpdesk.utils.helpers import gerar_protocolo, get_or_404, update_from_dict, apply_filters, pagination_response
@@ -93,6 +95,73 @@ class TicketService:
         db.session.add(comment)
         db.session.commit()
         return comment
+
+    def escalar_prioridade(self, ticket_id):
+        """Escala um chamado não atribuído para a próxima prioridade se estiver
+        há mais de 50% do SLA na fila. Retorna 400 se já for crítico."""
+        ticket = self.get_by_id(ticket_id)
+
+        if ticket.priority and ticket.priority.level >= 4:
+            raise ValidationError("Chamado já está na prioridade máxima (Crítica)")
+
+        if ticket.assigned_to_id is not None:
+            raise ValidationError("Chamado já está atribuído a um técnico")
+
+        if ticket.status and ticket.status.is_final:
+            raise ValidationError("Chamado está em status final")
+
+        if not ticket.sla_horas:
+            raise ValidationError("Chamado não possui SLA definido")
+
+        if ticket.tempo_decorrido() <= timedelta(hours=ticket.sla_horas * 0.5):
+            raise ValidationError("Chamado ainda não atingiu 50% do SLA")
+
+        current_level = ticket.priority.level if ticket.priority else 0
+        next_priority = Priority.query.filter_by(level=current_level + 1).first()
+        if not next_priority:
+            raise ValidationError("Não foi possível encontrar a próxima prioridade")
+
+        old_name = ticket.priority.name if ticket.priority else "N/A"
+        ticket.priority_id = next_priority.id
+
+        historico = TicketHistory(
+            ticket_id=ticket.id,
+            acao=f"Prioridade escalada de {old_name} para {next_priority.name}",
+            responsavel="Sistema - Escalonamento Automático",
+        )
+        db.session.add(historico)
+        db.session.commit()
+        return ticket
+
+    def verificar_escaladas(self):
+        """Percorre todos os chamados na fila não atribuídos e aplica
+        escalar_prioridade() nos elegíveis (>50% SLA). Retorna lista dos escalados."""
+        from sqlalchemy import not_
+
+        final_ids = [
+            s.id for s in Status.query.filter_by(is_final=True).all()
+        ]
+
+        candidatos = Ticket.query.filter(
+            Ticket.assigned_to_id.is_(None),
+            not_(Ticket.status_id.in_(final_ids)) if final_ids else True,
+        ).all()
+
+        escalados = []
+        for ticket in candidatos:
+            if not ticket.sla_horas:
+                continue
+            if ticket.tempo_decorrido() <= timedelta(hours=ticket.sla_horas * 0.5):
+                continue
+            if ticket.priority and ticket.priority.level >= 4:
+                continue
+            try:
+                self.escalar_prioridade(ticket.id)
+                escalados.append(ticket)
+            except ValidationError:
+                continue
+
+        return escalados
 
     def list_tickets(self, page=1, per_page=20, **filters):
         """Lista tickets com paginação e filtros opcionais por coluna."""

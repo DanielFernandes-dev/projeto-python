@@ -15,6 +15,7 @@ from helpdesk.resources.priority import priority_bp
 from helpdesk.resources.status import status_bp
 from helpdesk.resources.company import company_bp
 from helpdesk.resources.dashboard import dashboard_bp
+from helpdesk.resources.chamado import chamado_bp
 
 
 def create_app(config_class=Config):
@@ -36,6 +37,7 @@ def create_app(config_class=Config):
     app.register_blueprint(status_bp, url_prefix=f"{prefix}/statuses")
     app.register_blueprint(company_bp, url_prefix=f"{prefix}/companies")
     app.register_blueprint(dashboard_bp, url_prefix=f"{prefix}/dashboard")
+    app.register_blueprint(chamado_bp, url_prefix=f"{prefix}/chamados")
 
     @app.route("/")
     def index():
